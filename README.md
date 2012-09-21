@@ -14,3 +14,7 @@ The generated file will be a makefile, not unlike that created with gcc -M
 What's next
 ==========
 a better, non-annoying make for both windows and linux.
+
+TODO
+====
+remove boilerplate compiler files from repo, add built exe to downloads section blabla, create a .gitignore file that actually ignores visual studio files
