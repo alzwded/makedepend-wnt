@@ -11,8 +11,24 @@ class Path {
     std::list<std::string> nodes_;
     bool beginSlash_;
 
+	std::string cacheFull_;
+	std::string cacheRHead_;
+	std::string cacheExtension_;
+	std::string cacheHead_;
+	std::string cacheFileName_;
+
+	void ClearCache()
+	{
+		cacheFull_ = "";
+		cacheRHead_ = "";
+		cacheHead_ = "";
+		cacheExtension_ = "";
+		cacheFileName_ = "";
+	}
+
     void Init(const std::string& _s)
     {
+		ClearCache();
         std::string s(_s);
         for(size_t i = 0; i < s.length(); ++i) {
             if(s[i] == OTHER_PATH_SEP) s[i] = PATH_SEPARATOR_CHAR;
@@ -54,15 +70,19 @@ public:
     }
     void Push(const std::string& _node)
     {
+		ClearCache();
         nodes_.push_back(_node);
     }
     void Pop()
     {
         if(nodes_.empty()) return;
         nodes_.pop_back();
+		ClearCache();
     }
     std::string Get()
     {
+		if(!cacheFull_.empty()) return cacheFull_;
+
         std::stringstream ret;
         if(beginSlash_) ret << PATH_SEPARATOR_CHAR;
         if(nodes_.empty()) return ret.str();
@@ -74,10 +94,13 @@ public:
         {
             ret << PATH_SEPARATOR_CHAR << *i;
         }
+
+		cacheFull_ = ret.str();
         return ret.str();
     }
     std::string Head()
     {
+		if(!cacheHead_.empty()) return cacheHead_;
         std::stringstream ret;
         if(beginSlash_) ret << PATH_SEPARATOR_CHAR;
         if(nodes_.empty()) return ret.str();
@@ -93,6 +116,7 @@ public:
             ret << PATH_SEPARATOR_CHAR << *i;
         }
         nodes_.push_back(tail);
+		cacheHead_ = ret.str();
         return ret.str();
     }
     std::string Tail()
@@ -102,33 +126,39 @@ public:
     }
     std::string RHead()
     {
+		if(!cacheRHead_.empty()) return cacheRHead_;
         std::string ret = Get();
         size_t p = ret.rfind(".");
         size_t psep = ret.rfind(PATH_SEPARATOR_CHAR);
         if(p != std::string::npos && p > psep) {
-            return ret.substr(0, p);
+			cacheRHead_ = ret.substr(0, p);
         } else {
-            return ret;
+			cacheRHead_ = ret;
         }
+		return cacheRHead_;
     }
     std::string FileName()
     {
+		if(!cacheFileName_.empty()) return cacheFileName_;
         if(nodes_.empty()) return "";
         std::string ret = nodes_.back();
         size_t p = ret.rfind(".");
         if(p != std::string::npos) {
-            return ret.substr(0, p);
+			cacheFileName_ = ret.substr(0, p);
         } else {
-            return ret;
+            cacheFileName_ = ret;
         }
+		return cacheFileName_;
     }
     std::string Extension()
     {
+		if(!cacheExtension_.empty()) return cacheExtension_;
         if(nodes_.empty()) return "";
         std::string ret = nodes_.back();
         size_t p = ret.rfind(".");
         if(p != std::string::npos && p < ret.length() - 1) {
-            return ret.substr(p + 1);
+			cacheExtension_ = ret.substr(p + 1);
+            return cacheExtension_;
         } else {
             return "";
         }
@@ -146,6 +176,7 @@ public:
     }
     void RemoveNode(size_t _i)
     {
+		ClearCache();
         if(_i < 0 || _i >= nodes_.size()) return;
         std::list<std::string>::iterator i = nodes_.begin();
         advance(i, _i);
@@ -153,6 +184,7 @@ public:
     }
     void Insert(const std::string& _s, size_t _i)
     {
+		ClearCache();
         if(_i < 0 || _i >= nodes_.size()) return;
         std::list<std::string>::iterator i = nodes_.begin();
         advance(i, _i);

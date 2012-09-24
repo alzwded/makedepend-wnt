@@ -16,15 +16,73 @@ DependencyGenerator::DependencyGenerator(
 
 std::set<std::string> DependencyGenerator::gatherDependencies(std::fstream& f)
 {
+	bool insideComment = false;
     std::string s;
     std::set<std::string> ret;
+	size_t p, end, beginComment, endComment, lineComment;
 
     while(!f.eof()) {
-        size_t p, end;
         std::getline(dynamic_cast<std::istream&>(f), s, '\n');
-        if((p = s.find("#include")) != std::string::npos
-                && p < s.find("//"))
+recalculateLine:
+		beginComment = s.find("/*");
+		endComment = s.find("*/");
+		p = s.find("#include");
+		lineComment = s.find("//");
+		if(p == std::string::npos) {
+			if(insideComment
+				&& endComment != std::string::npos
+				&& (lineComment == std::string::npos || lineComment > endComment))
+			{
+				insideComment = false;
+				s = s.substr(endComment + 1);
+			}
+			if(!insideComment
+				&& beginComment != std::string::npos
+				&& (lineComment == std::string::npos || lineComment > beginComment))
+			{
+				insideComment = true;
+				goto recalculateLine;
+			}
+			continue;
+		}
+		if(lineComment != std::string::npos
+			&& p > lineComment)
+		{
+			continue;
+		}
+		if(endComment == std::string::npos && insideComment)
+		{
+			continue;
+		} else if(insideComment) {
+			s = s.substr(endComment + 1);
+			insideComment = false;
+			goto recalculateLine;
+		}
+		if(beginComment == std::string::npos && endComment == std::string::npos) { goto pullInclude; }
+		if(endComment == std::string::npos
+			&& beginComment != std::string::npos
+			&& p > beginComment)
+		{
+			insideComment = true;
+			continue;
+		}
+		if(beginComment != std::string::npos 
+			&& endComment != std::string::npos
+			&& p > beginComment
+			&& p < endComment)
+		{
+			s = s.substr(endComment + 1);
+			goto recalculateLine;
+		}
+		else if(beginComment != std::string::npos
+			&& endComment != std::string::npos
+			&& p > beginComment) {
+			s = s.substr(endComment + 1);
+			goto recalculateLine;
+		}
+pullInclude:
         {
+			insideComment = false;
             p = s.find("\"");
             if(p != std::string::npos) {
                 end = s.rfind("\"");
